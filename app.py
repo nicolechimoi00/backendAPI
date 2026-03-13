@@ -159,65 +159,92 @@ def get_products_details():
 
 # mpesa stk push payment
 
-
-# Mpesa Payment Route/Endpoint 
-import requests
 import datetime
 import base64
+import requests
 from requests.auth import HTTPBasicAuth
 
-@app.route('/api/mpesa_payment', methods=['POST'])
+# define route
+@app.route('/api/mpesa_payment',methods = ['POST'])
 def mpesa_payment():
-    if request.method == 'POST':
+    if request.method =='POST':
         amount = request.form['amount']
-        phone = request.form['phone']
-        # GENERATING THE ACCESS TOKEN
-        # create an account on safaricom daraja
-        consumer_key = "GTWADFxIpUfDoNikNGqq1C3023evM6UH"
-        consumer_secret = "amFbAoUByPV2rM5A"
+        phone = request.form.get('phone')
 
-        api_URL = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"  # AUTH URL
-        r = requests.get(api_URL, auth=HTTPBasicAuth(consumer_key, consumer_secret))
+
+        #credentials fro the daraja api
+        consumer_key = 'GTWADFxIpUfDoNikNGqq1C3023evM6UH'
+        consumer_secret = 'amFbAoUByPV2rM5A'
+
+
+        # api_url token url
+        api_url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type = client_credentials'
+
+        # request access token
+        r = requests.get(api_url, auth = HTTPBasicAuth(consumer_key,consumer_secret))
 
         data = r.json()
-        access_token = "Bearer" + ' ' + data['access_token']
+        access_token = 'Bearer' + '' + data['access_token']
 
-        #  GETTING THE PASSWORD
+
+        # generate the time stamp for the transaction
         timestamp = datetime.datetime.today().strftime('%Y%m%d%H%M%S')
+        # 20260311125610 
+
+        # the pass key from safaricom 
         passkey = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
-        business_short_code = "174379"
+
+
+        # business short code
+        business_short_code = '174379'
+
+        # create the password 
         data = business_short_code + passkey + timestamp
+
+        # encode the password 
         encoded = base64.b64encode(data.encode())
-        password = encoded.decode('utf-8')
 
-        # BODY OR PAYLOAD
+        # convert the encoded password to a string
+        password = encoded.decode('utf-8') 
+        # this transforms the password to a readable text
+
+
+        # create payment payload
         payload = {
-            "BusinessShortCode": "174379",
-            "Password": "{}".format(password),
-            "Timestamp": "{}".format(timestamp),
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": "1",  # use 1 when testing
-            "PartyA": phone,  # change to your number
-            "PartyB": "174379",
-            "PhoneNumber": phone,
-            "CallBackURL": "https://modcom.co.ke/api/confirmation.php",
-            "AccountReference": "account",
-            "TransactionDesc": "account"
+            'business_short_code' : '174379',
+            'password' : '{}'.format(password),
+            'transactionType' : 'CustomerPaybillOnline',
+            'amount' : '1',
+            'PartyA' : '0725930279',
+            'PartyB' : '174379',
+            'PhoneNumber' : phone,
+            'accountReference' : 'account',
+            'transactionDesc' : 'account'
+
         }
 
-        # POPULAING THE HTTP HEADER
+        # HTTP headers
         headers = {
-            "Authorization": access_token,
-            "Content-Type": "application/json"
+            'Authorization' : access_token,
+            'Content-type' : 'application/json'
         }
 
-        url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"  # C2B URL
+        # stl push API endpoint
+        url = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
 
-        response = requests.post(url, json=payload, headers=headers)
+        # send the request to safaricom
+
+        response = request.post(url, json = payload, headers = headers)
+
+
+        # print the response
         print(response.text)
-        return jsonify({"message": "Please Complete Payment in Your Phone and we will deliver in minutes"})
-    
 
+
+        # return response
+        return jsonify({
+            'message' : 'please complete the payment in your phone and we will deliver in minutes'
+        })
 
 
 
